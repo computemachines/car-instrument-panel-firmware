@@ -1,0 +1,64 @@
+.program lcm_send
+.side_set 1
+
+; Transmit one byte from FIFO, pulsing enable pin. Delay taken from FIFO. Loop.
+
+.define T_W  0
+.define T_C  4
+.define DATA_BITS  8
+
+
+.wrap_target
+PUBLIC entry:
+    pull               side 0
+    out y, DATA_BITS   side 0          ; Shift out data bits
+    out x, 1           side 0          ; Register select value (RS)
+    jmp !x, instruction_select  side 0 ; if RS then data_select
+data_select:
+    set pins, 1        side 0
+    jmp continue       side 0
+instruction_select:
+    set pins, 0        side 0 [1]
+continue:
+    mov pins, y        side 1
+    out y, 1           side 0          ; Long sleep flag
+    jmp !y, entry      side 0
+    set y, 15          side 0 [15]
+sleep:
+    jmp y--, sleep     side 0 [15]
+.wrap
+
+
+
+% c-sdk {
+static inline void lcm_send_program_init(
+    PIO pio, 
+    uint sm,
+    uint offset,
+    uint data_pin_start,
+    uint enable_pin,
+    uint rs_pin
+) {
+    pio_sm_config c = lcm_send_program_get_default_config(offset);
+
+
+    uint pin = data_pin_start;
+    for(; pin < data_pin_start + 8; pin++ ) {
+        pio_gpio_init(pio, pin); //data
+    }
+    pio_gpio_init(pio, enable_pin);
+    pio_gpio_init(pio, rs_pin);
+
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    sm_config_set_clkdiv(&c, 1024);
+    sm_config_set_out_pins(&c, data_pin_start, 8);
+    sm_config_set_sideset_pins(&c, enable_pin);
+    sm_config_set_set_pins(&c, rs_pin, 1);
+
+    pio_sm_set_consecutive_pindirs(pio, sm, data_pin_start, 11, true);
+
+    pio_sm_init(pio, sm, offset, &c);
+
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

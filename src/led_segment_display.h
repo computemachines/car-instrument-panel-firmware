@@ -8,6 +8,11 @@
 #define DIGIT_2 21
 #define DIGIT_3 20
 #define DIGIT_4 16
+#define DIGITS_MASK ( \
+        (1 << DIGIT_1) \
+        | (1 << DIGIT_2) \
+        | (1 << DIGIT_3) \
+        | (1 << DIGIT_4)) 
 
 #define SEGMENT_SPI spi0
 #define SEGMENT_SPI_TX 19
@@ -25,19 +30,19 @@
 
 uint8_t FRAMEBUFFER[4];
 
-void init_display();
+void led_init();
 
-void disable_display();
+void led_disable();
 
-void select_digit(uint8_t n);
+void led_select_digit(uint8_t n);
 
-void write_segments(uint8_t byte);
-void write_digit(uint8_t byte, bool decimal);
-void write_decimal_format(int16_t scaled_decimal, int8_t decade, uint8_t display_decimal_position, bool show_decimal_point);
+void led_write_segments(uint8_t byte);
+void led_write_digit(uint8_t byte, bool decimal);
+void led_write_decimal_format(int16_t scaled_decimal, int8_t decade, uint8_t display_decimal_position, bool show_decimal_point);
 
-uint8_t digit_to_segments(uint8_t digit);
-void set_digits(uint8_t *digits, int8_t decimal_point_position);
+uint8_t led_digit_to_segments(uint8_t digit);
+void led_set_digits(uint8_t *digits, int8_t decimal_point_position);
 
-void display_loop();
+void led_display_loop();
 
 #endif // __PROJECTS_CAR_INSTRUMENT_PANEL_FIRMWARE_SRC_LED_SEGMENT_DISPLAY_H_

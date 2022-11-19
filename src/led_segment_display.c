@@ -3,9 +3,8 @@
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 
-void init_display()
+void led_init()
 {
-    int x = XIP_AUX_BASE;
     gpio_init(DIGIT_1);
     gpio_set_dir(DIGIT_1, GPIO_OUT);
     gpio_init(DIGIT_2);
@@ -21,7 +20,7 @@ void init_display()
     gpio_set_function(SEGMENT_SPI_TX, GPIO_FUNC_SPI);
 }
 
-void write_segments(const uint8_t byte)
+void led_write_segments(const uint8_t byte)
 {
     spi_write_blocking(spi0, &byte, 1);
 }
@@ -29,14 +28,14 @@ void clear_segments()
 {
     spi_write_blocking(SEGMENT_SPI, NULL, 1);
 }
-void write_digit(uint8_t digit, bool decimal_point)
+void led_write_digit(uint8_t digit, bool decimal_point)
 {
     uint8_t optional_dp_segment = SEGMENT_DP * decimal_point;
-    uint8_t digit_segments = digit_to_segments(digit);
-    write_segments(digit_segments | optional_dp_segment);
+    uint8_t digit_segments = led_digit_to_segments(digit);
+    led_write_segments(digit_segments | optional_dp_segment);
 }
 
-void set_digits(uint8_t *digits, int8_t decimal_point_position)
+void led_set_digits(uint8_t *digits, int8_t decimal_point_position)
 {
     for (uint8_t i = 1; i <= 4; i++)
     {
@@ -46,26 +45,28 @@ void set_digits(uint8_t *digits, int8_t decimal_point_position)
         } else {
             dp = 0;
         }
-        FRAMEBUFFER[i-1] = digit_to_segments(digits[i-1]) | dp;
+        FRAMEBUFFER[i-1] = led_digit_to_segments(digits[i-1]) | dp;
     }
 }
 
-void display_loop()
+void led_display_loop()
 {
     while (true)
     {
         for (int digit = 1; digit <= 4; digit++)
         {
-            clear_segments();
-            sleep_ms(1);
-            select_digit(digit);
-            write_segments(FRAMEBUFFER[digit-1]);
+            //clear_segments();
+            //sleep_ms(1);
+            //led_select_digit(digit);
+            //led_write_segments(FRAMEBUFFER[digit-1]);
+            uint8_t highs = 0xFF;
+            spi_write_blocking(spi0, &highs, 1);
             sleep_ms(1);
         }
     }
 }
 
-void disable_display()
+void led_disable()
 {
     gpio_put(DIGIT_1, false);
     gpio_put(DIGIT_2, false);
@@ -73,9 +74,9 @@ void disable_display()
     gpio_put(DIGIT_4, false);
 }
 
-void select_digit(uint8_t n)
+void led_select_digit(uint8_t n)
 {
-    disable_display();
+    led_disable();
 
     switch (n)
     {
@@ -109,7 +110,7 @@ const uint8_t digits_lut[] = {
     SEGMENT_A | SEGMENT_B | SEGMENT_G | SEGMENT_F | SEGMENT_C,
 };
 
-uint8_t digit_to_segments(uint8_t digits)
+uint8_t led_digit_to_segments(uint8_t digits)
 {
     if (digits <= 9)
     {
@@ -121,7 +122,7 @@ uint8_t digit_to_segments(uint8_t digits)
     }
 }
 
-void write_decimal_format(
+void led_write_decimal_format(
     int16_t scaled_decimal,
     int8_t decade,
     uint8_t display_decimal_position,
